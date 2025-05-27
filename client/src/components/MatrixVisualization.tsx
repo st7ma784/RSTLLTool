@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ColorModeSelector } from "@/components/ColorModeSelector";
+import { calculateCellColor, type ColorConfig } from "@/lib/colorUtils";
 import { Settings, Download, RotateCcw } from "lucide-react";
 import type { MatrixCell, DetectedStructure } from "@shared/schema";
 
@@ -19,6 +21,9 @@ export function MatrixVisualization({
 }: MatrixVisualizationProps) {
   const [selectedCell, setSelectedCell] = useState<MatrixCell | null>(null);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const [colorMode, setColorMode] = useState<string>('type');
+  const [colorIntensity, setColorIntensity] = useState<number>(75);
+  const [showLegend, setShowLegend] = useState<boolean>(true);
 
   const matrix = useMemo(() => {
     if (!matrixData || !Array.isArray(matrixData)) {
@@ -48,14 +53,18 @@ export function MatrixVisualization({
     return matrixData as MatrixCell[];
   }, [matrixData]);
 
-  const getMatrixCellColor = (type: string) => {
-    switch (type) {
-      case 'active': return 'matrix-active';
-      case 'pointer': return 'matrix-pointer';
-      case 'dropped': return 'matrix-dropped';
-      case 'empty': return 'matrix-empty';
-      default: return 'matrix-empty';
-    }
+  const getMatrixCellStyle = (cell: MatrixCell) => {
+    const colorConfig: ColorConfig = {
+      mode: colorMode,
+      intensity: colorIntensity
+    };
+    
+    const backgroundColor = calculateCellColor(cell, colorConfig, matrix);
+    
+    return {
+      backgroundColor,
+      border: selectedCell === cell ? '2px solid #facc15' : '1px solid #374151',
+    };
   };
 
   const getMatrixStats = () => {
@@ -138,11 +147,8 @@ export function MatrixVisualization({
               {matrix.map((cell, index) => (
                 <div
                   key={index}
-                  className={`
-                    matrix-cell w-6 h-6 rounded cursor-pointer
-                    ${getMatrixCellColor(cell.type)}
-                    ${selectedCell === cell ? 'ring-2 ring-yellow-400' : ''}
-                  `}
+                  className="matrix-cell w-6 h-6 rounded cursor-pointer transition-all"
+                  style={getMatrixCellStyle(cell)}
                   title={cell.tooltip}
                   onClick={() => setSelectedCell(cell)}
                 />
@@ -184,6 +190,19 @@ export function MatrixVisualization({
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Color Mode Selector */}
+      <div className="border-t border-gray-700">
+        <ColorModeSelector
+          matrixData={matrix}
+          selectedColorMode={colorMode}
+          onColorModeChange={setColorMode}
+          colorIntensity={colorIntensity}
+          onIntensityChange={setColorIntensity}
+          showLegend={showLegend}
+          onToggleLegend={setShowLegend}
+        />
       </div>
 
       {/* Controls */}

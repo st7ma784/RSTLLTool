@@ -4,6 +4,7 @@ import { FileExplorer } from "@/components/FileExplorer";
 import { CodeEditor } from "@/components/CodeEditor";
 import { MatrixVisualization } from "@/components/MatrixVisualization";
 import { AnalysisResults } from "@/components/AnalysisResults";
+import { StructureSelector } from "@/components/StructureSelector";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -15,6 +16,7 @@ export default function Analyzer() {
   const [selectedFile, setSelectedFile] = useState<CppFile | null>(null);
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [selectedStructures, setSelectedStructures] = useState<string[]>([]);
 
   const { data: files = [] } = useQuery<CppFile[]>({
     queryKey: ["/api/files"],
@@ -38,6 +40,16 @@ export default function Analyzer() {
     setIsAnalyzing(true);
     try {
       await startAnalysis(selectedFile.content);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [selectedFile, startAnalysis]);
+
+  const handleTargetedAnalysis = useCallback(async (structureNames: string[]) => {
+    if (!selectedFile) return;
+    setIsAnalyzing(true);
+    try {
+      await startAnalysis(selectedFile.content, structureNames);
     } finally {
       setIsAnalyzing(false);
     }
@@ -88,14 +100,32 @@ export default function Analyzer() {
         <ResizablePanelGroup direction="horizontal">
           {/* Sidebar */}
           <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-            <FileExplorer
-              files={files}
-              selectedFile={selectedFile}
-              onFileSelect={handleFileSelect}
-              onStartAnalysis={handleStartAnalysis}
-              isAnalyzing={isAnalyzing || analysisLoading}
-              detectedStructures={analysis?.structures as DetectedStructure[] || []}
-            />
+            <div className="flex flex-col h-full">
+              {/* File Explorer - Upper Section */}
+              <div className="flex-1 min-h-0">
+                <FileExplorer
+                  files={files}
+                  selectedFile={selectedFile}
+                  onFileSelect={handleFileSelect}
+                  onStartAnalysis={handleStartAnalysis}
+                  isAnalyzing={isAnalyzing || analysisLoading}
+                  detectedStructures={analysis?.structures as DetectedStructure[] || []}
+                />
+              </div>
+              
+              {/* Structure Selector - Lower Section */}
+              {(analysis?.structures as DetectedStructure[] || []).length > 0 && (
+                <div className="border-t border-gray-700">
+                  <StructureSelector
+                    structures={analysis?.structures as DetectedStructure[] || []}
+                    selectedStructures={selectedStructures}
+                    onSelectionChange={setSelectedStructures}
+                    onStartTargetedAnalysis={handleTargetedAnalysis}
+                    isAnalyzing={isAnalyzing || analysisLoading}
+                  />
+                </div>
+              )}
+            </div>
           </ResizablePanel>
 
           <ResizableHandle />

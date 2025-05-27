@@ -70,7 +70,7 @@ export function useCodeAnalysis(fileId?: number) {
     },
   });
 
-  const startAnalysis = useCallback(async (content: string) => {
+  const startAnalysis = useCallback(async (content: string, selectedStructures?: string[]) => {
     try {
       // Parse code locally first for immediate feedback
       const parsedData = parseCodeToStructures(content);
@@ -97,7 +97,12 @@ export function useCodeAnalysis(fileId?: number) {
         }
       });
 
-      const matrix = matrixGenerator.generateFromStructures(structures);
+      // Filter structures based on selection if provided
+      const targetStructures = selectedStructures && selectedStructures.length > 0 
+        ? structures.filter(s => selectedStructures.includes(s.name))
+        : structures;
+
+      const matrix = matrixGenerator.generateFromStructures(targetStructures);
       
       setAnalysisState({
         currentStep: 0,

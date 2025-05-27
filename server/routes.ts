@@ -131,6 +131,196 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Live Data Structure Manipulation API
+  // Create a new data structure
+  app.post("/api/live/structure", async (req, res) => {
+    try {
+      const { name, type, depth = 1, initialSize = 10 } = req.body;
+      
+      if (!name || !type) {
+        return res.status(400).json({ message: "Name and type are required" });
+      }
+
+      const structure = await storage.createLiveStructure({
+        name,
+        type,
+        depth: Math.max(1, depth),
+        nodes: [],
+        created_at: new Date().toISOString(),
+        last_modified: new Date().toISOString(),
+      });
+
+      // Initialize with empty nodes if specified
+      if (initialSize > 0) {
+        for (let i = 0; i < initialSize; i++) {
+          structure.nodes.push({
+            id: i,
+            value: null,
+            active: false,
+            next: type === 'linked_list' ? (i < initialSize - 1 ? i + 1 : null) : null,
+            metadata: {},
+          });
+        }
+        await storage.updateLiveStructure(structure.id, structure);
+      }
+
+      res.json(structure);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create structure", error });
+    }
+  });
+
+  // Get all live structures
+  app.get("/api/live/structures", async (req, res) => {
+    try {
+      const structures = await storage.getAllLiveStructures();
+      res.json(structures);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch structures", error });
+    }
+  });
+
+  // Get specific structure
+  app.get("/api/live/structure/:name", async (req, res) => {
+    try {
+      const structure = await storage.getLiveStructureByName(req.params.name);
+      if (!structure) {
+        return res.status(404).json({ message: "Structure not found" });
+      }
+      res.json(structure);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch structure", error });
+    }
+  });
+
+  // Add node to structure
+  app.post("/api/live/structure/:name/node", async (req, res) => {
+    try {
+      const { value, index, metadata = {} } = req.body;
+      const structure = await storage.getLiveStructureByName(req.params.name);
+      
+      if (!structure) {
+        return res.status(404).json({ message: "Structure not found" });
+      }
+
+      const nodeId = structure.nodes.length > 0 ? Math.max(...structure.nodes.map(n => n.id)) + 1 : 0;
+      const newNode = {
+        id: nodeId,
+        value: value,
+        active: true,
+        next: null,
+        metadata: metadata,
+      };
+
+      if (index !== undefined && index >= 0 && index <= structure.nodes.length) {
+        structure.nodes.splice(index, 0, newNode);
+        // Update next pointers for linked list
+        if (structure.type === 'linked_list') {
+          updateLinkedListPointers(structure.nodes);
+        }
+      } else {
+        structure.nodes.push(newNode);
+        // For linked list, link the previous last node to this one
+        if (structure.type === 'linked_list' && structure.nodes.length > 1) {
+          structure.nodes[structure.nodes.length - 2].next = nodeId;
+        }
+      }
+
+      structure.last_modified = new Date().toISOString();
+      await storage.updateLiveStructure(structure.id, structure);
+
+      res.json({ node: newNode, structure });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to add node", error });
+    }
+  });
+
+  // Remove node from structure
+  app.delete("/api/live/structure/:name/node/:nodeId", async (req, res) => {
+    try {
+      const nodeId = parseInt(req.params.nodeId);
+      const structure = await storage.getLiveStructureByName(req.params.name);
+      
+      if (!structure) {
+        return res.status(404).json({ message: "Structure not found" });
+      }
+
+      const nodeIndex = structure.nodes.findIndex(n => n.id === nodeId);
+      if (nodeIndex === -1) {
+        return res.status(404).json({ message: "Node not found" });
+      }
+
+      // Mark as inactive instead of actual removal for visualization
+      structure.nodes[nodeIndex].active = false;
+      structure.nodes[nodeIndex].metadata.dropped_at = new Date().toISOString();
+
+      // Update linked list pointers if needed
+      if (structure.type === 'linked_list') {
+        updateLinkedListPointers(structure.nodes.filter(n => n.active));
+      }
+
+      structure.last_modified = new Date().toISOString();
+      await storage.updateLiveStructure(structure.id, structure);
+
+      res.json({ message: "Node marked as inactive", structure });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to remove node", error });
+    }
+  });
+
+  // Update node in structure
+  app.put("/api/live/structure/:name/node/:nodeId", async (req, res) => {
+    try {
+      const nodeId = parseInt(req.params.nodeId);
+      const { value, metadata = {} } = req.body;
+      const structure = await storage.getLiveStructureByName(req.params.name);
+      
+      if (!structure) {
+        return res.status(404).json({ message: "Structure not found" });
+      }
+
+      const node = structure.nodes.find(n => n.id === nodeId);
+      if (!node) {
+        return res.status(404).json({ message: "Node not found" });
+      }
+
+      if (value !== undefined) node.value = value;
+      node.metadata = { ...node.metadata, ...metadata };
+      node.metadata.last_updated = new Date().toISOString();
+
+      structure.last_modified = new Date().toISOString();
+      await storage.updateLiveStructure(structure.id, structure);
+
+      res.json({ node, structure });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update node", error });
+    }
+  });
+
+  // Get live matrix visualization for all structures
+  app.get("/api/live/matrix", async (req, res) => {
+    try {
+      const structures = await storage.getAllLiveStructures();
+      const matrix = generateLiveMatrix(structures);
+      res.json(matrix);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate live matrix", error });
+    }
+  });
+
+  // Clear/reset a structure
+  app.delete("/api/live/structure/:name", async (req, res) => {
+    try {
+      const deleted = await storage.deleteLiveStructure(req.params.name);
+      if (!deleted) {
+        return res.status(404).json({ message: "Structure not found" });
+      }
+      res.json({ message: "Structure deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete structure", error });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
@@ -192,6 +382,94 @@ function generateMatrixData(structures: any[]) {
       });
     }
   }
+  
+  return matrix;
+}
+
+// Helper functions for live data structures
+function updateLinkedListPointers(nodes: any[]) {
+  for (let i = 0; i < nodes.length; i++) {
+    if (i < nodes.length - 1) {
+      nodes[i].next = nodes[i + 1].id;
+    } else {
+      nodes[i].next = null;
+    }
+  }
+}
+
+function generateLiveMatrix(structures: any[]) {
+  const matrix = [];
+  const gridWidth = 12;
+  const gridHeight = 8;
+  
+  // Initialize empty matrix
+  for (let y = 0; y < gridHeight; y++) {
+    for (let x = 0; x < gridWidth; x++) {
+      matrix.push({
+        x,
+        y,
+        type: 'empty',
+        value: null,
+        tooltip: `Empty cell at (${x}, ${y})`,
+        structureName: null,
+        nodeId: null,
+      });
+    }
+  }
+  
+  // Place structures in matrix
+  let currentY = 0;
+  structures.forEach((structure) => {
+    const activeNodes = structure.nodes.filter((n: any) => n.active);
+    const droppedNodes = structure.nodes.filter((n: any) => !n.active);
+    
+    // Place active nodes
+    activeNodes.forEach((node: any, index: number) => {
+      const x = index % gridWidth;
+      const y = currentY + Math.floor(index / gridWidth);
+      
+      if (y < gridHeight) {
+        const matrixIndex = y * gridWidth + x;
+        if (matrixIndex < matrix.length) {
+          matrix[matrixIndex] = {
+            x,
+            y,
+            type: 'active',
+            value: node.value !== null ? node.value : `${structure.name}_${node.id}`,
+            tooltip: `${structure.name} node ${node.id} (active)`,
+            structureName: structure.name,
+            nodeId: node.id,
+          };
+        }
+      }
+    });
+    
+    // Place dropped nodes
+    droppedNodes.forEach((node: any, index: number) => {
+      const totalActiveNodes = activeNodes.length;
+      const x = (totalActiveNodes + index) % gridWidth;
+      const y = currentY + Math.floor((totalActiveNodes + index) / gridWidth);
+      
+      if (y < gridHeight) {
+        const matrixIndex = y * gridWidth + x;
+        if (matrixIndex < matrix.length) {
+          matrix[matrixIndex] = {
+            x,
+            y,
+            type: 'dropped',
+            value: node.value !== null ? node.value : `${structure.name}_${node.id}`,
+            tooltip: `${structure.name} node ${node.id} (dropped)`,
+            structureName: structure.name,
+            nodeId: node.id,
+          };
+        }
+      }
+    });
+    
+    // Move to next row for next structure
+    const totalNodes = structure.nodes.length;
+    currentY += Math.ceil(totalNodes / gridWidth);
+  });
   
   return matrix;
 }
