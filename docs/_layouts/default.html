@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="{{ site.lang | default: "en-US" }}">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    {% seo %}
+    <link rel="stylesheet" href="{{ "/assets/css/style.css?v=" | append: site.github.build_revision | relative_url }}">
+    <style>
+      .main-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+      .nav-menu {
+        background: #f8f9fa;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        border-radius: 8px;
+      }
+      .nav-menu ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+      .nav-menu a {
+        text-decoration: none;
+        color: #0969da;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+      }
+      .nav-menu a:hover {
+        background-color: #e1f5fe;
+      }
+      .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 2rem;
+        text-align: center;
+        margin-bottom: 2rem;
+        border-radius: 12px;
+      }
+      .hero-section h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+      }
+      .hero-section p {
+        font-size: 1.2rem;
+        opacity: 0.9;
+      }
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin: 2rem 0;
+      }
+      .feature-card {
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+        padding: 1.5rem;
+        background: white;
+      }
+      .feature-card h3 {
+        color: #0969da;
+        margin-top: 0;
+      }
+      .code-block {
+        background: #f6f8fa;
+        border: 1px solid #e1e4e8;
+        border-radius: 6px;
+        padding: 1rem;
+        overflow-x: auto;
+      }
+      @media (max-width: 768px) {
+        .nav-menu ul {
+          flex-direction: column;
+        }
+        .hero-section h1 {
+          font-size: 2rem;
+        }
+        .main-content {
+          padding: 1rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="main-content">
+      {% if page.url == "/" %}
+      <div class="hero-section">
+        <h1>{{ site.title | default: site.github.repository_name }}</h1>
+        <p>{{ site.description | default: site.github.project_tagline }}</p>
+      </div>
+      {% endif %}
+
+      <nav class="nav-menu">
+        <ul>
+          {% for item in site.navigation %}
+            <li><a href="{{ item.url | relative_url }}">{{ item.title }}</a></li>
+          {% endfor %}
+          <li><a href="{{ site.github.repository_url }}" target="_blank">View on GitHub</a></li>
+        </ul>
+      </nav>
+
+      <main>
+        {{ content }}
+      </main>
+
+      <footer style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #e1e4e8; text-align: center; color: #586069;">
+        <p>
+          &copy; {{ 'now' | date: "%Y" }} {{ site.author.name | default: site.github.owner_name }}. 
+          Built with Jekyll and hosted on GitHub Pages.
+        </p>
+        {% if site.github.is_project_page %}
+        <p>
+          <a href="{{ site.github.repository_url }}">{{ site.github.repository_name }}</a> 
+          is maintained by <a href="{{ site.github.owner_url }}">{{ site.github.owner_name }}</a>.
+        </p>
+        {% endif %}
+      </footer>
+    </div>
+
+    {% if site.google_analytics %}
+      <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+        ga('create', '{{ site.google_analytics }}', 'auto');
+        ga('send', 'pageview');
+      </script>
+    {% endif %}
+  </body>
+</html>
