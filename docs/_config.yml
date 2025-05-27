@@ -39,6 +39,8 @@ navigation:
     url: /getting-started/
   - title: "User Guide"
     url: /user-guide/
+  - title: "C++ Integration"
+    url: /integration/
   - title: "API Reference"
     url: /api-reference/
   - title: "Architecture"
