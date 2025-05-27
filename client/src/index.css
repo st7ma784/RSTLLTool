@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 20 14.3% 4.1%;
+  --muted: 60 4.8% 95.9%;
+  --muted-foreground: 25 5.3% 44.7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 14.3% 4.1%;
+  --card: 0 0% 100%;
+  --card-foreground: 20 14.3% 4.1%;
+  --border: 20 5.9% 90%;
+  --input: 20 5.9% 90%;
+  --primary: 207 90% 54%;
+  --primary-foreground: 211 100% 99%;
+  --secondary: 60 4.8% 95.9%;
+  --secondary-foreground: 24 9.8% 10%;
+  --accent: 60 4.8% 95.9%;
+  --accent-foreground: 24 9.8% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  --ring: 20 14.3% 4.1%;
+  --radius: 0.5rem;
+
+  /* Custom colors for the analyzer */
+  --code-bg: 13 12% 9%; /* #0D1117 */
+  --code-border: 31 12% 13%; /* #21262D */
+  --syntax-keyword: 14 100% 72%; /* #FF7B72 */
+  --syntax-string: 199 100% 81%; /* #A5D6FF */
+  --syntax-comment: 215 14% 58%; /* #8B949E */
+  --syntax-type: 34 100% 67%; /* #FFA657 */
+  --github-blue: 213 93% 42%; /* #0969DA */
+  --matrix-active: 142 71% 45%; /* #10B981 */
+  --matrix-dropped: 0 84% 60%; /* #EF4444 */
+  --matrix-pointer: 217 91% 60%; /* #3B82F6 */
+  --matrix-empty: 215 28% 17%; /* #374151 */
+}
+
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --primary: 207 90% 54%;
+  --primary-foreground: 211 100% 99%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 240 4.9% 83.9%;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-gray-900 text-white;
+  }
+
+  /* Code editor styles */
+  .code-editor {
+    background: hsl(var(--code-bg));
+    color: theme(colors.gray.100);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  .syntax-keyword {
+    color: hsl(var(--syntax-keyword));
+  }
+
+  .syntax-string {
+    color: hsl(var(--syntax-string));
+  }
+
+  .syntax-comment {
+    color: hsl(var(--syntax-comment));
+  }
+
+  .syntax-type {
+    color: hsl(var(--syntax-type));
+  }
+
+  /* Matrix visualization styles */
+  .matrix-cell {
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .matrix-cell:hover {
+    transform: scale(1.1);
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .matrix-active {
+    background-color: hsl(var(--matrix-active));
+  }
+
+  .matrix-dropped {
+    background-color: hsl(var(--matrix-dropped));
+  }
+
+  .matrix-pointer {
+    background-color: hsl(var(--matrix-pointer));
+  }
+
+  .matrix-empty {
+    background-color: hsl(var(--matrix-empty));
+  }
+
+  /* Step highlight animation */
+  .step-highlight {
+    animation: pulse-highlight 1s ease-in-out;
+  }
+
+  @keyframes pulse-highlight {
+    0%, 100% { 
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+    50% { 
+      background-color: rgba(59, 130, 246, 0.3);
+    }
+  }
+
+  /* Loading animation */
+  .loading-dots {
+    animation: loading-dots 1.4s infinite ease-in-out;
+  }
+
+  @keyframes loading-dots {
+    0%, 80%, 100% {
+      transform: scale(0);
+    }
+    40% {
+      transform: scale(1);
+    }
+  }
+
+  /* File drag and drop */
+  .drag-over {
+    border-color: hsl(var(--github-blue));
+    background-color: rgba(9, 105, 218, 0.1);
+  }
+}
